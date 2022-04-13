@@ -24,6 +24,7 @@ class Arrayfire(CMakePackage, CudaPackage):
     variant('cpu',  default=True, description='Enable CPU library')
     variant('opencl', default=False, description='Enable OpenCL backend')
     variant('forge',  default=False, description='Enable graphics library')
+    variant('cudnn',  default=False, description='Build with cuDNN library support')
 
     depends_on('boost@1.70:')
 
@@ -34,8 +35,8 @@ class Arrayfire(CMakePackage, CudaPackage):
 
     depends_on('cuda@7.5:', when='+cuda')
 
-    depends_on('cudnn@8.0.3:8.1', when='@:3.7 +cuda')
-    depends_on('cudnn', when='@3.8: +cuda')
+    depends_on('cudnn@7.1.3:7', when='@:3.7.0 +cuda')
+    depends_on('cudnn', when='@3.8: +cuda+cudnn')
 
     depends_on('opencl +icd', when='+opencl')
     # TODO add more opencl backends:
@@ -69,11 +70,15 @@ class Arrayfire(CMakePackage, CudaPackage):
     def cmake_args(self):
         args = []
         args.extend([
+            self.define_from_variant('AF_BUILD_CPU', 'cpu'),
             self.define_from_variant('AF_BUILD_CUDA', 'cuda'),
             self.define_from_variant('AF_BUILD_FORGE', 'forge'),
             self.define_from_variant('AF_BUILD_OPENCL', 'opencl'),
             self.define('BUILD_TESTING', self.run_tests),
         ])
+
+        if spec.version >= Version('3.7.1'):
+            args.append(self.define_from_variant('AF_WITH_CUDNN', 'cudnn'))
 
         if '+cuda' in self.spec:
             arch_list = ['{}.{}'.format(arch[:-1], arch[-1])
