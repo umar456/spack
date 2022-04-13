@@ -21,14 +21,22 @@ class Arrayfire(CMakePackage, CudaPackage):
     version('3.7.2', commit='218dd2c99300e77496239ade76e94b0def65d032', submodules=True, tag='v3.7.2')
     version('3.7.0', commit='fbea2aeb6f7f2d277dcb0ab425a77bb18ed22291', submodules=True, tag='v3.7.0')
 
-    variant('forge',  default=False, description='Enable graphics library')
+    variant('cpu',  default=True, description='Enable CPU library')
     variant('opencl', default=False, description='Enable OpenCL backend')
+    variant('forge',  default=False, description='Enable graphics library')
 
     depends_on('boost@1.70:')
-    depends_on('fftw-api@3:')
-    depends_on('blas')
+
+    depends_on('fftw-api@3:', when='+cpu')
+
+    depends_on('blas', when='+cpu')
+    depends_on('blas', when='+opencl')
+
     depends_on('cuda@7.5:', when='+cuda')
-    depends_on('cudnn', when='+cuda')
+
+    depends_on('cudnn@8.0.3:8.1', when='@:3.7 +cuda')
+    depends_on('cudnn', when='@3.8: +cuda')
+
     depends_on('opencl +icd', when='+opencl')
     # TODO add more opencl backends:
     # currently only Cuda backend is enabled
@@ -39,6 +47,8 @@ class Arrayfire(CMakePackage, CudaPackage):
 
     conflicts('cuda_arch=none', when='+cuda',
               msg='CUDA architecture is required')
+
+    patch('cfloat.patch', when='@3.7.2,3.7.3')
 
     @property
     def libs(self):

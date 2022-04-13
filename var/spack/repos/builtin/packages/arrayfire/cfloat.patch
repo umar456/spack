@@ -1,0 +1,12 @@
+diff --git a/src/backend/opencl/kernel/homography.hpp b/src/backend/opencl/kernel/homography.hpp
+index b84e599f..d07a4666 100644
+--- a/src/backend/opencl/kernel/homography.hpp
++++ b/src/backend/opencl/kernel/homography.hpp
+@@ -19,6 +19,7 @@
+ #include <memory.hpp>
+ #include <af/defines.h>
+ 
++#include <cfloat>
+ #include <string>
+ #include <vector>
+ 
