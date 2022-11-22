@@ -27,15 +27,31 @@ class Arrayfire(CMakePackage, CudaPackage):
         "3.7.0", commit="fbea2aeb6f7f2d277dcb0ab425a77bb18ed22291", submodules=True, tag="v3.7.0"
     )
 
-    variant("forge", default=False, description="Enable graphics library")
-    variant("opencl", default=False, description="Enable OpenCL backend")
+    variant('cpu', default=True, description='Enable CPU backend')
+    variant('forge', default=False, description='Enable graphics library')
+    variant('opencl', default=False, description='Enable OpenCL backend')
+    variant('cudnn', default=False, when='+cuda',  description='Enable OpenCL backend')
 
-    depends_on("boost@1.70:")
-    depends_on("fftw-api@3:")
-    depends_on("blas")
-    depends_on("cuda@7.5:", when="+cuda")
-    depends_on("cudnn", when="+cuda")
-    depends_on("opencl +icd", when="+opencl")
+    depends_on('boost@1.70: +math+stacktrace')
+    depends_on('spdlog@:1.9.2 +fmt_external')
+    depends_on('span-lite@0.10.3:')
+    depends_on('half')
+    depends_on('fmt@8')
+
+    depends_on('fftw-api@3:', when='+cpu')
+    depends_on('fftw-api@3:', when='+opencl')
+    depends_on('blas', when='+cpu')
+    depends_on('blas', when='+opencl')
+    depends_on('opencl-clhpp', when='+opencl')
+    depends_on('clblast', when='+opencl')
+
+    depends_on('cuda@10.2:', when='+cuda')
+    depends_on('cuda@10:', when='@3.8.2: +cuda')
+
+    depends_on('cudnn@7.1.3:7', when='@:3.7.0 +cuda')
+    depends_on('cudnn', when='@3.7.1: +cuda+cudnn')
+
+    depends_on('opencl +icd', when='+opencl')
     # TODO add more opencl backends:
     # currently only Cuda backend is enabled
     # https://github.com/arrayfire/arrayfire/wiki/Build-Instructions-for-Linux#opencl-backend-dependencies
@@ -62,9 +78,14 @@ class Arrayfire(CMakePackage, CudaPackage):
         return find_libraries(libraries, root=self.prefix, recursive=True)
 
     def cmake_args(self):
-        args = []
+        args = [
+            self.define('AF_BUILD_EXAMPLES', False),
+            self.define('AF_BUILD_DOCS', False),
+
+        ]
         args.extend(
             [
+                self.define_from_variant("AF_BUILD_CPU", "cpu"),
                 self.define_from_variant("AF_BUILD_CUDA", "cuda"),
                 self.define_from_variant("AF_BUILD_FORGE", "forge"),
                 self.define_from_variant("AF_BUILD_OPENCL", "opencl"),
@@ -72,12 +93,14 @@ class Arrayfire(CMakePackage, CudaPackage):
             ]
         )
 
-        if "+cuda" in self.spec:
-            arch_list = [
-                "{}.{}".format(arch[:-1], arch[-1])
-                for arch in self.spec.variants["cuda_arch"].value
-            ]
-            args.append(self.define("CUDA_architecture_build_targets", arch_list))
+        if self.spec.version >= Version('3.7.1'):
+            args.append(self.define_from_variant('AF_WITH_CUDNN', 'cudnn'))
+
+        if '+cuda' in self.spec:
+            arch_list = ['{}.{}'.format(arch[:-1], arch[-1])
+                         for arch in self.spec.variants['cuda_arch'].value]
+            args.append(self.define('CUDA_architecture_build_targets',
+                                    arch_list))
 
         if "^mkl" in self.spec:
             if self.version >= Version("3.8.0"):
