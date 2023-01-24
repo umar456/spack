@@ -16,6 +16,7 @@ class Arrayfire(CMakePackage, CudaPackage):
     maintainers = ["umar456"]
 
     version("master")
+    version("3.8.2", commit="5752f2dcc9e3de03010cc99b2a41534d3024df64", tag="v3.8.2")
     version("3.8.1", commit="823e8e399fe8c120c6ec7ec75f09e6106b3074ca", tag="v3.8.1")
     version(
         "3.7.3", commit="59ac7b980d1ae124aae914fb29cbf086c948954d", submodules=True, tag="v3.7.3"
